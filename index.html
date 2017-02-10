@@ -1,0 +1,243 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Heatmaps</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 100%;
+        }
+
+        #floating-panel {
+            'position: absolute;
+            top: 10px;
+            left: 25%;
+            z-index: 5;
+            background-color: #fff;
+            padding: 5px;
+            border: 1px solid #999;
+            text-align: center;
+            font-family: 'Roboto','sans-serif';
+            line-height: 30px;
+            padding-left: 10px;
+        }
+
+        #floating-panel {
+            background-color: #fff;
+            border: 1px solid #999;
+            left: 25%;
+            padding: 5px;
+            'position: absolute;
+            top: 10px;
+            z-index: 5;
+        }
+
+        #upload {
+            height: 200px;
+            text-align:center;
+        }
+		#footer{
+			height: 100px;
+            text-align:center;
+			
+		}
+		#footer ul{
+			list-style:none;
+		}
+		
+		#footer ul#menu {
+			padding: 0;
+		}
+
+		#footer	ul#menu li {
+			display: inline;
+		}
+		
+		#footer ul#menu li a{
+		
+		    background-color: black;
+			color: white;
+			padding: 10px 20px;
+			text-decoration: none;
+			border-radius: 4px 4px 0 0;
+		
+		}
+    </style>
+    <script src="./papaparse.js"></script>
+    <script src="./jquery.js"></script>
+    <script>
+          var daten;
+          var cordniatesDestination = new Array();
+          var cordniatesCompletion = new Array();
+          var cordinatesStart = new Array();
+          var cordinatesArrival = new Array();
+
+          function handleFileSelect(evt) {
+            var file = evt.target.files[0];
+
+            Papa.parse(file, {
+              header: true,
+              dynamicTyping: true,
+              complete: function (results) {
+                  len = results.data.length;
+                  i = 0;
+                  while (i < len) {
+                      
+                      if (results.data[i].taskType == "dropoff") {
+                          if (results.data[i].destinationLonLat != null && results.data[i].destinationLonLat.length > 0) {
+                              DestinationCordninates = results.data[i].destinationLonLat.split(",");
+                              cordniatesDestination.push(DestinationCordninates[1] + "," + DestinationCordninates[0]);
+                          }
+                          /*
+                          if (results.data[i].arrivalLonLat != null && results.data[i].arrivalLonLat.length > 0) {
+                              arrivalCordninates = results.data[i].arrivalLonLat.split(",");
+                              cordinatesArrival.push(arrivalCordninates[1] + "," + arrivalCordninates[0]);
+                          }
+                          if (results.data[i].completionLonLat != null && results.data[i].completionLonLat.length > 0) {
+                              completionCordninates = results.data[i].completionLonLat.split(",");
+                              cordniatesCompletion.push(completionCordninates[1] + "," + completionCordninates[0]);
+                          }
+                          if (results.data[i].startLonLat != null && results.data[i].startLonLat.length > 0) {
+                              startCordninates = results.data[i].startLonLat.split(",");
+                              cordinatesStart.push(startCordninates[1] + "," + startCordninates[0]);
+                          }
+                          */
+                      }
+
+                      i++
+                  }
+
+
+                 
+                  data = [];
+                  initMap();
+
+              }
+            });
+          }
+
+          $(document).ready(function(){
+            $("#csv-file").change(handleFileSelect);
+          });
+    </script>
+</head>
+
+<body>
+    <div id="upload">
+        <h1>Create Onfleet Heatmap</h1>
+        <p>How does it work?</p>
+        <ul>
+            <li>Download Onfleet File from Dashboard</li>
+            <li>Upload Onfleet File hiere</li>
+        </ul>
+        <input type="file" id="csv-file" name="files" /> 
+    </div>
+    <div id="floating-panel">
+        <button onclick="toggleHeatmap()">Toggle Heatmap</button>
+        <button onclick="changeGradient()">Change gradient</button>
+        <button onclick="changeRadius()">Change radius</button>
+        <button onclick="changeOpacity()">Change opacity</button>
+    </div>
+    <div id="map"></div>
+    <script>
+ 
+
+var map, heatmap;
+
+function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 13,
+        center: {lat: 48.3705449, lng: 10.897789999999986},
+        mapTypeId: google.maps.MapTypeId.SATELLITE
+      });
+      Points = new Array();
+        //Einlesen der Datenpunkte
+      if (cordniatesDestination != null && cordniatesDestination.length > 0) {
+          var z = 0;
+          while (z < cordniatesDestination.length) {
+              LatLong = cordniatesDestination[z].split(",");
+              Point = new google.maps.LatLng(LatLong[0], LatLong[1]);
+              Points.push(Point);
+              z++
+          }
+      };
+      if (cordinatesArrival != null && cordinatesArrival.length > 0) {
+          var z = 0;
+          while (z < cordinatesArrival.length) {
+              LatLong = cordinatesArrival[z].split(",");
+              Point = new google.maps.LatLng(LatLong[0], LatLong[1]);
+              Points.push(Point);
+              z++
+          }
+      };
+      if (cordniatesCompletion != null && cordniatesCompletion.length > 0) {
+          var z = 0;
+          while (z < cordniatesCompletion.length) {
+              LatLong = cordniatesCompletion[z].split(",");
+              Point = new google.maps.LatLng(LatLong[0], LatLong[1]);
+              Points.push(Point);
+              z++
+          }
+      };
+      if (cordinatesStart != null && cordinatesStart.length > 0) {
+          var z = 0;
+          while (z < cordinatesStart.length) {
+              LatLong = cordinatesStart[z].split(",");
+              Point = new google.maps.LatLng(LatLong[0], LatLong[1]);
+              Points.push(Point);
+              z++
+          }
+      };
+
+      var pointArray = new google.maps.MVCArray(Points);
+
+      heatmap = new google.maps.visualization.HeatmapLayer({
+          data: pointArray,
+        map: map
+      });
+}
+
+function toggleHeatmap() {
+  heatmap.setMap(heatmap.getMap() ? null : map);
+}
+
+function changeGradient() {
+  var gradient = [
+    'rgba(0, 255, 255, 0)',
+    'rgba(0, 255, 255, 1)',
+    'rgba(0, 191, 255, 1)',
+    'rgba(0, 127, 255, 1)',
+    'rgba(0, 63, 255, 1)',
+    'rgba(0, 0, 255, 1)',
+    'rgba(0, 0, 223, 1)',
+    'rgba(0, 0, 191, 1)',
+    'rgba(0, 0, 159, 1)',
+    'rgba(0, 0, 127, 1)',
+    'rgba(63, 0, 91, 1)',
+    'rgba(127, 0, 63, 1)',
+    'rgba(191, 0, 31, 1)',
+    'rgba(255, 0, 0, 1)'
+  ]
+  heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
+}
+
+function changeRadius() {
+  heatmap.set('radius', heatmap.get('radius') ? null : 20);
+}
+
+function changeOpacity() {
+  heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
+}
+
+    </script>
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&signed_in=true&libraries=visualization&callback=initMap">
+    </script>
+</body>
+</html>
